@@ -1,5 +1,6 @@
 reports/*
 logs/*
+token
 
 !reports/.gitkeep
 !logs/.gitkeep
