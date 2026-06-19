@@ -10,6 +10,9 @@ CYAN='\033[1;36m'
 MAGENTA='\033[1;35m'
 NC='\033[0m'
 
+mkdir -p reports logs
+touch logs/activity.log
+
 show_banner()
 {
 	sleep 0.3
@@ -29,25 +32,18 @@ show_banner()
 	
 log_header()
 {
-	echo  | tee -a $report
-    	echo "========== $( date +"%Y-%m-%d  %H:%M:%S" ) ==========" | tee -a $report
+	echo  | tee -a "$report"
+    	echo "========== $( date +"%Y-%m-%d  %H:%M:%S" ) ==========" | tee -a "$report"
 }
 
 write_log()
 {
-	echo "[$( date +"%Y-%m-%d  %H:%M:%S" )] $1"  >> logs/activity.log
+	echo "[$( date +"%Y-%m-%d  %H:%M:%S" )] $1"  >> "logs/activity.log"
 }
 
 validate_target()
 {
-    	ping -c 2 $1 > /dev/null 2>&1
-
-    	if [ $? -eq 0 ]
-    	 then
-        	return 0
-    	else
-        	return 1
-    	fi
+    	ping -c 2 "$1" > /dev/null 2>&1
 }
 
 section_header()
@@ -89,10 +85,17 @@ check_tools()
 	missing_tools=()
 	tools=("nmap" "whois" "host")
 
+	echo 
+	echo -e "${CYAN}Checking Environment...${NC}"
+	echo 
+	sleep 1	
 	for tool in "${tools[@]}"
 	do
-		if ! command -v "$tool" &> /dev/null
+		if  command -v "$tool" &> /dev/null
 		then
+			echo -e "${GREEN}[✓] $tool${NC}"
+		else
+			echo -e "${RED}[x] $tool${NC}"
 			missing_tools+=("$tool")
 		fi
 	done
@@ -111,11 +114,14 @@ check_tools()
 		
 		exit 1
 	fi
+	echo 
+	echo -e "${GREEN}[+] All Required Tools Found${NC}"
+
 }
 
 check_tools
-echo -e "${GREEN}[+] All Required Tools Found${NC}"
 sleep 1
+
 while true
 do
 	show_banner
@@ -126,7 +132,7 @@ do
 
         	1)
             	read -p "Enter target (IP or domain): " tg
-            	validate_target $tg
+            	validate_target "$tg"
             	if [ $? -eq 0 ]
             	 then
                 		report="reports/${tg}.txt"
@@ -136,11 +142,11 @@ do
                 		echo -e "${YELLOW}[*] Pinging $tg ...${NC}"
                 		loading
                 		echo
-                		ping -c 4 $tg | tee -a $report
+                		ping -c 4 "$tg" | tee -a "$report"
                 		echo
                 		write_log "Ping scan performed on $tg."
                 		echo -e "${GREEN}[+] Report saved to $report${NC}"
-                		show_summary $tg
+                		show_summary "$tg"
             	else
                 		echo
                 		echo -e "${RED}[-] Target unreachable or invalid!${NC}"
@@ -149,21 +155,19 @@ do
 
         	2)
             	read -p "Enter domain : " domain
-            	validate_target $domain
-	            if [ $? -eq 0 ]
-            	 then
-                		report="reports/${domain}.txt"
-                		log_header
-                		echo
-                		section_header "DNS RESULT"              
-                		echo -e "${YELLOW}[*] Fetching DNS info for $domain ...${NC}"
-                		loading
-                		echo
-                		host $domain | tee -a $report
+            	report="reports/${domain}.txt"
+                	log_header
+                	echo
+                	section_header "DNS RESULT"              
+                	echo -e "${YELLOW}[*] Fetching DNS info for $domain ...${NC}"
+                	loading
+                	echo
+                	if host "$domain" | tee -a "$report"
+                	then
                 		echo
                 		write_log "DNS lookup performed on $domain."
                 		echo -e "${GREEN}[+] Report saved to $report${NC}"
-                		show_summary $domain
+                		show_summary "$domain"
             	else
                 		echo
                 		echo -e "${RED}[-] Invalid or unreachable domain!${NC}"
@@ -172,21 +176,20 @@ do
 
         	3)
             	read -p "Enter domain : " domain
-	            validate_target $domain
-	            if [ $? -eq 0 ]
-      	       then
-             		report="reports/${domain}.txt"
-	                	log_header
-                		echo
-                		section_header "WHOIS RESULTS"
-                		echo -e "${YELLOW}[*] Fetching Whois info for $domain ...${NC}"
-                		loading
-                		echo
-                		whois $domain | grep -E "Registrar:|Creation Date:|Registry Expiry Date:|Name Server:" | tee -a $report
+	            report="reports/${domain}.txt"
+	            log_header
+                	echo
+                	section_header "WHOIS RESULTS"
+                	echo -e "${YELLOW}[*] Fetching Whois info for $domain ...${NC}"
+                	loading
+                	echo
+                	if whois "$domain" > /dev/null 2>&1
+                	then
+                		whois "$domain" | grep -E "Registrar:|Creation Date:|Registry Expiry Date:|Name Server:" | tee -a "$report"
                 		write_log "Whois lookup performed on $domain."
 	                	echo
 	                	echo -e "${GREEN}[+] Report saved to $report${NC}"
-	                	show_summary $domain
+	                	show_summary "$domain"
 	            else
                 		echo
                 		echo -e "${RED}[-] Invalid or unreachable domain!${NC}"
@@ -195,21 +198,19 @@ do
 
         	4)
             	read -p "Enter target : " tg
-	            validate_target $tg
-	            if [ $? -eq 0 ]
-      	       then
-                		report="reports/${tg}.txt"
-	                	log_header
-	                	echo
-	                	section_header "PORT SCAN RESULTS"
-                		echo -e "${YELLOW}[*] Scanning open ports on $tg ...${NC}"
-                		loading
-                		echo
-                		nmap $tg | tee -a $report
+                	report="reports/${tg}.txt"
+	            log_header
+	            echo
+	            section_header "PORT SCAN RESULTS"
+                	echo -e "${YELLOW}[*] Scanning open ports on $tg ...${NC}"
+                	loading
+                	echo
+                	if nmap -sV "$tg" | tee -a "$report"
+                	then	
                 		echo
                 		write_log "Port Scan performed on $tg."
                 		echo -e "${GREEN}[+] Report saved to $report${NC}"
-                		show_summary $tg
+                		show_summary "$tg"
             	else
                 		echo
                 		echo -e "${RED}[-] Target unreachable or invalid!${NC}"
