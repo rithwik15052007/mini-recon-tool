@@ -25,7 +25,8 @@ show_banner()
     	echo -e "${GREEN}[2]${NC} DNS Lookup"
     	echo -e "${GREEN}[3]${NC} Whois Lookup"
     	echo -e "${GREEN}[4]${NC} Port Scan"
-    	echo -e "${GREEN}[5]${NC} Exit"
+    	echo -e "${GREEN}[5]${NC} HTTP Header"
+    	echo -e "${GREEN}[6]${NC} Exit"
     	
     	echo
 }
@@ -83,7 +84,7 @@ loading()
 check_tools()
 {
 	missing_tools=()
-	tools=("nmap" "whois" "host")
+	tools=("nmap" "whois" "host" "curl")
 
 	echo 
 	echo -e "${CYAN}Checking Environment...${NC}"
@@ -217,10 +218,44 @@ do
             	fi
             	;;
 
-        	5)
+            5)
+            	read -p "Enter URL (https://example.com) : " url
+            	domain=$(echo "$url" | sed 's|https\?://||' | cut -d '/' -f1)
+            	report="reports/${domain}.txt"
+            	log_header
+            	echo
+            	section_header "HTTP HEADER"
+            	echo -e "${YELLOW}[*] Fetching HTTP Header from $url ...${NC}"
+            	loading
+            	echo  
+            	header=$(curl -I -L "$url" 2>/dev/null)
+            	if [[ -n "$header" ]]
+            	then	
+            		echo "$header" >> "$report"
+            		echo -e "${CYAN}Server Information : ${NC}"
+            		echo "$header" | grep -i "^server:"
+            		echo
+            		echo -e "${CYAN}Content Information : ${NC}"
+            		echo "$header" | grep -i "^content-type:"
+            		echo
+            		echo -e "${CYAN}Security Header : ${NC}"
+            		echo "$header" | grep -Ei \
+				"^strict-transport-security:|^x-frame-options:|^x-content-type-options:"
+				echo
+            		write_log "HTTP Header performed on $url."
+            		echo -e "${GREEN}[+] Report saved to $report${NC}"
+            		show_summary "$url"
+            	else 
+            		echo 
+            		echo -e "${RED}[-] Failed to fetch headers!${NC}"
+            	fi
+            	;;
+
+
+        	6)
             	echo
             	echo -e "${CYAN}Exiting Mini Recon Tool... 😎${NC}"
-            	break
+            	exit 0
             	;;
 
         	*)
