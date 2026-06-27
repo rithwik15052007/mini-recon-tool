@@ -26,8 +26,9 @@ show_banner()
     	echo -e "${GREEN}[3]${NC} Whois Lookup"
     	echo -e "${GREEN}[4]${NC} Port Scan"
     	echo -e "${GREEN}[5]${NC} HTTP Header"
-    	echo -e "${GREEN}[6]${NC} Exit"
-    	
+    	echo -e "${GREEN}[6]${NC} WhatWeb"
+    	echo -e "${GREEN}[7]${NC} SSL Certificate Analysis"
+    	echo -e "${GREEN}[8]${NC} Exit"
     	echo
 }
 	
@@ -84,7 +85,7 @@ loading()
 check_tools()
 {
 	missing_tools=()
-	tools=("nmap" "whois" "host" "curl")
+	tools=("curl" "host" "nmap" "openssl" "whatweb" "whois")
 
 	echo 
 	echo -e "${CYAN}Checking Environment...${NC}"
@@ -251,12 +252,95 @@ do
             	fi
             	;;
 
+		6)
+			
+			read -p "Enter URL (https://example.com) : " url
+		      domain=$(echo "$url" | sed 's|https\?://||' | cut -d '/' -f1)
+    			report="reports/${domain}.txt"
 
-        	6)
-            	echo
-            	echo -e "${CYAN}Exiting Mini Recon Tool... 😎${NC}"
-            	exit 0
-            	;;
+    			log_header
+    			echo
+    			section_header "WHATWEB"
+    			echo -e "${YELLOW}[*] Fetching Details from $url ...${NC}"
+    			loading
+    			echo
+
+    			header=$(whatweb "$url" 2>/dev/null)
+
+    			if [[ -n "$header" ]]
+    			then
+        			echo "$header" >> "$report"
+
+        			section_header "TECHNOLOGY DETECTION"
+
+        			ip=$(echo "$header" | grep -o 'IP\[[^]]*\]' | cut -d'[' -f2 | tr -d ']')
+        			server=$(echo "$header" | grep -o 'HTTPServer\[[^]]*\]' | cut -d'[' -f2 | tr -d ']')
+        			status=$(echo "$header" | grep -o '\[[0-9][0-9][0-9] [A-Z]*\]' | tr -d '[]')
+
+        			echo -e "${CYAN}IP Address  : ${NC}${ip:-Not Detected}"
+        			echo -e "${CYAN}Server      : ${NC}${server:-Not Detected}"
+        			echo -e "${CYAN}HTTP Status : ${NC}${status:-Not Detected}"
+
+        			echo
+        			echo -e "${CYAN}Detected Technologies:${NC}"
+
+        			echo "$header" | grep -oE 'HTML5|WordPress|Drupal|Joomla|Bootstrap|React|Angular|Vue.js|jQuery|PHP|ASP.NET|Apache|Nginx|Open-Graph-Protocol|OpenSearch|Strict-Transport-Security|X-Frame-Options'
+
+        			echo
+        			write_log "WhatWeb scan performed on $url"
+        			echo -e "${GREEN}[+] Report saved to $report${NC}"
+        			show_summary "$url"
+
+    		else
+        			echo
+        			echo -e "${RED}[-] Failed to fetch details!${NC}"
+    		fi
+    		;;
+		
+        	7)
+            	read -p "Enter URL (https://example.com) : " url
+		      domain=$(echo "$url" | sed 's|https\?://||' | cut -d '/' -f1)
+    			report="reports/${domain}.txt"
+
+    			log_header
+    			echo
+    			section_header "SSL CERTIFICATE"
+    			echo -e "${YELLOW}[*] Fetching Details from $url ...${NC}"
+    			loading
+    			echo
+
+    			header=$(echo | openssl s_client -connect "$domain:443" 2>/dev/null | openssl x509 -noout -subject -issuer -dates)
+    			if [[ -n "$header" ]]
+    			then 
+    				echo "$header" >> "$report"
+				section_header "CERTIFICATE DETAILS"
+				common_name=$(echo "$header" | grep "^subject=" | sed 's/^subject=//' | grep -o 'CN *= *[^,]*' | cut -d'=' -f2 | xargs)
+
+    				issuer=$(echo "$header" | grep "^issuer=" | sed 's/^issuer=//' | grep -o 'CN *= *[^,]*' | cut -d'=' -f2 | xargs)
+
+    				valid_from=$(echo "$header" | grep "^notBefore=" | cut -d'=' -f2)
+
+    				expires_on=$(echo "$header" | grep "^notAfter=" | cut -d'=' -f2)
+
+    				echo -e "${CYAN}Common Name : ${NC}${common_name:-Not Detected}"
+    				echo -e "${CYAN}Issuer      : ${NC}${issuer:-Not Detected}"
+    				echo -e "${CYAN}Valid From  : ${NC}${valid_from:-Not Detected}"
+    				echo -e "${CYAN}Expires On  : ${NC}${expires_on:-Not Detected}"
+    				echo 
+    				write_log "SSL Certificate analysis performed on $url"
+    				echo -e "${GREEN}[+] Report saved to $report${NC}"
+    				show_summary "$url"
+    			else
+    				echo
+    				echo -e "${RED}[-] Falied to fetch details!${NC}"
+			fi
+			;;
+			
+		8) 
+			echo
+			echo -e "${CYAN}Exiting Mini Recon Tool... 😎${NC}"
+			exit 0
+			;;
 
         	*)
             	echo
@@ -266,3 +350,5 @@ do
 	esac
 
 done
+
+			

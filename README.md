@@ -3,15 +3,14 @@
 ![Bash](https://img.shields.io/badge/Bash-Scripting-green?style=for-the-badge&logo=gnu-bash)
 ![Linux](https://img.shields.io/badge/Linux-Terminal-black?style=for-the-badge&logo=linux)
 ![Nmap](https://img.shields.io/badge/Nmap-Network%20Scanner-blue?style=for-the-badge)
-![Status](https://img.shields.io/badge/Project-Completed-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Project-Active-success?style=for-the-badge)
 ![Cyber Security](https://img.shields.io/badge/Cyber-Security-red?style=for-the-badge)
 ![Recon Tool](https://img.shields.io/badge/Type-Reconnaissance-purple?style=for-the-badge)
 ![CLI Tool](https://img.shields.io/badge/Interface-CLI-informational?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Educational-orange?style=for-the-badge)
 
-A simple Bash-based reconnaissance tool for basic network and domain information gathering.
-
+A Bash-based reconnaissance tool designed to perform basic network and web reconnaissance tasks from the command line. It provides a simple menu-driven interface for gathering useful information about domains and hosts while automatically generating reports and maintaining activity logs.
 ---
 
 ## Features
@@ -20,6 +19,9 @@ A simple Bash-based reconnaissance tool for basic network and domain information
 - DNS Information Lookup
 - WHOIS Enumeration
 - Port Scanning using Nmap
+- HTTP Header Analysis
+- Technology Detection using WhatWeb
+- SSL Certificate Analysis
 - Colorized Terminal Output
 - Report Generation
 - Activity Logging
@@ -46,13 +48,17 @@ recon-tool/
 Make sure the following tools are installed:
 
 - bash
-- host
+- curl
+- dnsutils
 - whois
 - nmap
+- whatweb
+- openssl
 
 Install required packages:
 
-sudo apt install nmap whois dnsutils
+sudo apt update
+sudo apt install curl whois dnsutils whois nmap whatweb openssl
 
 ---
 
@@ -78,31 +84,34 @@ Run the tool: ./recon.sh
 This project helps in learning:
 
 - Bash scripting
-- Linux commands
+- Linux Command-Line Utilities
 - Networking basics
-- Reconnaissance techniques
-- Automation
-- Command-line tools
+- DNS & WHOIS Enumeration
+- Port Scanning
+- HTTP Header Analysis
+- SSL/TLS Certificate Inspection
+- Web Technology Fingerprinting
+- Shell Script Automation
+
 
 ---
 
 ## Future Improvements
 
 - Subdomain Enumeration
-- HTTP Header Analysis
-- Service Version Detection
+- Security Header Analysis
+- Reverse DNS Lookup
+- Traceroute
 - Parallel Scanning
-- Automated Report Export
-- Tech Stack Detection
-
 ---
 
 ## Disclaimer
 
-Use only on:
-- This project is developed strictly for educational and ethical purposes only.
+This project is intended strictly for educational and ethical purposes.
+
+- Use only on systems you own or have explicit authorization to test.
+- Unauthorized scanning may violate laws or organizational policies.
 - The author is not responsible for any misuse of this tool.
-- Use only on systems you own or have explicit permission to test.
 
 Unauthorized scanning may be illegal.
 
