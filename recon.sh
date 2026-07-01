@@ -22,7 +22,7 @@ show_banner()
     	echo -e  "${BLUE}==========================${NC}"
 	echo -e "${NC}"
     	echo -e "${GREEN}[1]${NC} Ping Target"
-    	echo -e "${GREEN}[2]${NC} DNS Lookup"
+    	echo -e "${GREEN}[2]${NC} DNS Resolution"
     	echo -e "${GREEN}[3]${NC} Whois Lookup"
     	echo -e "${GREEN}[4]${NC} Port Scan"
     	echo -e "${GREEN}[5]${NC} HTTP Header"
@@ -156,24 +156,63 @@ do
             	;;
 
         	2)
-            	read -p "Enter domain : " domain
-            	report="reports/${domain}.txt"
+            	read -p "Enter Domain or IP Address: " tg
+            	report="reports/${tg}.txt"
                 	log_header
-                	echo
-                	section_header "DNS RESULT"              
-                	echo -e "${YELLOW}[*] Fetching DNS info for $domain ...${NC}"
-                	loading
-                	echo
-                	if host "$domain" | tee -a "$report"
-                	then
-                		echo
-                		write_log "DNS lookup performed on $domain."
-                		echo -e "${GREEN}[+] Report saved to $report${NC}"
-                		show_summary "$domain"
-            	else
-                		echo
-                		echo -e "${RED}[-] Invalid or unreachable domain!${NC}"
-            	fi
+            	if [[  "$tg" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+			then
+    				echo
+    				section_header "REVERSE DNS LOOKUP"
+    				echo -e "${YELLOW}[*] Performing Reverse DNS Lookup on $tg ...${NC}"
+		          	 loading
+		          	 echo 
+		          	 hostname=$(host "$tg" 2>/dev/null | awk '/pointer/ {print $NF'} | sed 's/\.$//')
+		          	 if [[ -n "$hostname" ]]
+		          	 then
+		          	 	
+		          	 	host "$tg" > "$report" 
+		          	 	echo -e "${CYAN}IP Address : ${NC}$tg"
+					echo -e "${CYAN}Hostname : ${NC}$hostname"
+					echo 
+					write_log "Reverse DNS lookup performed on $tg."
+					echo -e "${GREEN}[+] Report saved to $report${NC}"
+					show_summary "$tg"
+				else
+					echo 
+					echo -e "${RED}[-] No Reverse DNS record found!${NC}"
+				fi
+			else
+            	
+		          	echo
+		          	section_header "DNS LOOKUP"              
+		          	echo -e "${YELLOW}[*] Fetching DNS Lookup on $tg ...${NC}"
+		          	loading
+		          	echo
+		          	if host "$tg"  > "$report" 2>&1
+		          	then
+		          	
+		          		ipv4=$(host "$tg" | awk '/has address/ {print " - " $NF}')
+					ipv6=$(host "$tg" | awk '/has IPv6 address/ {print " - " $NF}')
+					mail=$(host "$tg" | awk '/mail is handled by/ {print " - " $NF}')
+
+					echo -e "${CYAN}IPv4 Address(es):${NC}"
+					echo "${ipv4:-Not Found}"
+					echo
+					echo -e "${CYAN}IPv6 Address(es):${NC}"
+					echo "${ipv6:-Not Found}"
+					echo
+					echo -e "${CYAN}Mail Server(s):${NC}"
+					echo "${mail:-Not Found}"
+					echo
+					
+            			write_log "DNS lookup performed on $tg."
+		          		echo -e "${GREEN}[+] Report saved to $report${NC}"
+		          		show_summary "$tg"
+		      	else
+		          		echo
+		          		echo -e "${RED}[-] Invalid or unreachable domain!${NC}"
+		      	fi
+		      fi
             	;;
 
         	3)
@@ -229,20 +268,38 @@ do
             	echo -e "${YELLOW}[*] Fetching HTTP Header from $url ...${NC}"
             	loading
             	echo  
-            	header=$(curl -I -L "$url" 2>/dev/null)
+            	header=$(curl -sI -L "$url" 2>/dev/null)
             	if [[ -n "$header" ]]
             	then	
+            	
             		echo "$header" >> "$report"
-            		echo -e "${CYAN}Server Information : ${NC}"
-            		echo "$header" | grep -i "^server:"
+            		section_header "HEADER INFORMATION"
+            		server=$(echo "$header" | grep -im1 "^server:" | cut -d':' -f2- | xargs)
+				content_type=$(echo "$header" | grep -im1 "^content-type:" | cut -d':' -f2- | xargs)
+				echo -e "${CYAN}Server Information : ${NC}${server:-Not Detected}"
+            		echo -e "${CYAN}Content-Type Information : ${NC}${content_type:-Not Detected}"
+            		echo 
+            		section_header "SECURITY HEADER ANALYSIS"
+            		#Headers is a array of headers
+            		headers=(
+            		"Strict-Transport-Security" "X-Frame-Options"
+            		"X-Content-Type-Options" "Content-Security-Policy"
+            		"Referrer-Policy" "Permissions-Policy"
+            		)
+            		echo "===================="
+				echo "$header"
+				echo "===================="
+            		for h in "${headers[@]}"
+            		do
+            			value=$(echo "$header" | grep -qi "^$h:" | cut -d ":" -f2- | xargs)
+            			if [[ -n "$value" ]]
+            			then 
+            				echo -e "${GREEN}[✓]${NC} $h : $value "
+            			else
+            				echo -e "${RED}[x]${NC} $h : Missing"
+            			fi
+            		done
             		echo
-            		echo -e "${CYAN}Content Information : ${NC}"
-            		echo "$header" | grep -i "^content-type:"
-            		echo
-            		echo -e "${CYAN}Security Header : ${NC}"
-            		echo "$header" | grep -Ei \
-				"^strict-transport-security:|^x-frame-options:|^x-content-type-options:"
-				echo
             		write_log "HTTP Header performed on $url."
             		echo -e "${GREEN}[+] Report saved to $report${NC}"
             		show_summary "$url"
@@ -351,4 +408,3 @@ do
 
 done
 
-			
