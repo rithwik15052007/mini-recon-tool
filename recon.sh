@@ -23,12 +23,14 @@ show_banner()
 	echo -e "${NC}"
     	echo -e "${GREEN}[1]${NC} Ping Target"
     	echo -e "${GREEN}[2]${NC} DNS Resolution"
-    	echo -e "${GREEN}[3]${NC} Whois Lookup"
+    	echo -e "${GREEN}[3]${NC} WHOIS Lookup"
     	echo -e "${GREEN}[4]${NC} Port Scan"
-    	echo -e "${GREEN}[5]${NC} HTTP Header"
-    	echo -e "${GREEN}[6]${NC} WhatWeb"
+    	echo -e "${GREEN}[5]${NC} HTTP Header Analysis"
+    	echo -e "${GREEN}[6]${NC} Technology Detection (WhatWeb)"
     	echo -e "${GREEN}[7]${NC} SSL Certificate Analysis"
-    	echo -e "${GREEN}[8]${NC} Exit"
+    	echo -e "${GREEN}[8]${NC} Traceroute"
+    	echo -e "${GREEN}[9]${NC} Subdomain Enumeration"
+    	echo -e "${GREEN}[10]${NC} Exit"
     	echo
 }
 	
@@ -73,7 +75,7 @@ loading()
 {
     	echo -ne "${MAGENTA}Processing${NC}"
 
-    	for i in 1 2 3
+    	for i in 1 2 3 4 5 
     	do
         	echo -n "."
         	sleep 1
@@ -85,7 +87,7 @@ loading()
 check_tools()
 {
 	missing_tools=()
-	tools=("curl" "host" "nmap" "openssl" "whatweb" "whois")
+	tools=("ping" "curl" "host" "nmap" "openssl" "whatweb" "whois" "traceroute" "assetfinder")
 
 	echo 
 	echo -e "${CYAN}Checking Environment...${NC}"
@@ -111,14 +113,15 @@ check_tools()
 		done
 		
 		echo
+		echo -e "${CYAN}Run this first :${NC}"
+		echo -e "${CYAN}sudo apt update${NC}"
 		echo -e "${CYAN}Install them using :${NC}"
 		echo "sudo apt install ${missing_tools[*]}"
 		
 		exit 1
 	fi
 	echo 
-	echo -e "${GREEN}[+] All Required Tools Found${NC}"
-
+	echo -e "${GREEN}[✓] Environment check completed successfully.${NC}"
 }
 
 check_tools
@@ -315,8 +318,8 @@ do
 		      domain=$(echo "$url" | sed 's|https\?://||' | cut -d '/' -f1)
     			report="reports/${domain}.txt"
 
-    			log_header
     			echo
+    			log_header
     			section_header "WHATWEB"
     			echo -e "${YELLOW}[*] Fetching Details from $url ...${NC}"
     			loading
@@ -393,7 +396,79 @@ do
 			fi
 			;;
 			
-		8) 
+		8)
+			read -p "Enter target (IP or domain) : " tg
+			report="reports/${tg}.txt"
+			log_header
+			echo
+			section_header "TRACEROUTE"
+			echo -e "${YELLOW}[*] Performing Traceroute on $tg ...${NC}"
+			loading
+			tr_op=$(traceroute -m 12 "$tg" 2>/dev/null)
+			echo "$tr_op" > "$report"
+			if [[ -n "$tr_op" ]]
+			then 
+				resolved_ip=$(echo "$tr_op" | head -n 1 | grep -oP '\(\K[0-9.]+(?=\))')
+				responsive_hops=$(echo "$tr_op" | tail -n +2 | grep -vc '^\s*[0-9]\+\s\+\*\s\+\*\s\+\*$')
+
+				  last_visible_hop=$(echo "$tr_op" | tail -n +2 | grep -v '^\s*[0-9]\+\s\+\*\s\+\*\s\+\*$' | tail -n 1 | sed 's/^[[:space:]]*[0-9]\+[[:space:]]*//')
+				if echo "$tr_op" | tail -n 1 | grep -q "$tg\|$resolved_ip"
+				then 
+					trace_status="Completed"
+				elif [[ "$responsive_hops" -gt 0 ]]
+				then 
+					trace_status="Partial / Timed Out"
+				else
+					trace_status="No Response"
+				fi
+				
+				echo -e "${CYAN}Target : ${NC}$tg"
+				echo -e "${CYAN}Resolved IP : ${NC}${resolved_ip:-Not Detected}"
+				echo -e "${CYAN}Max Hops : ${NC}12"
+				echo -e "${CYAN}Responsive Hops : ${NC}${responsive_hops:-0}"
+				echo -e "${CYAN}Last Visible Hop: ${NC}${last_visible_hop:-Not Detected}"
+				echo -e "${CYAN}Trace Status : ${NC}$trace_status"
+				write_log "Traceroute performed on $tg"	
+				echo
+				echo -e "${GREEN}[+] Report saved to $report${NC}" 
+				show_summary "$tg"
+			else
+				echo 
+				echo -e "${RED}[-] Failed to perform traceroute!${NC}"
+			fi
+			;;
+			
+		9)	read -p "Enter domain : " domain
+			report="reports/${domain}.txt"
+			log_header
+			echo
+			section_header "SUB-DOMAIN ENUMERATION"
+			echo  -e "${YELLOW}[*] Enumerating subdomains for $domain ...${NC}"
+			loading
+			echo
+			enum_op=$(assetfinder --subs-only "$domain" 2>/dev/null | sort -u) 
+			echo "$enum_op" > "$report"
+			if [[ -n "$enum_op" ]]
+			then
+				count=$(echo "$enum_op" | wc -l)
+				section_header "SUB-DOMAIN RESULT"
+				echo -e "${CYAN}Target Domain : ${NC}$domain"
+				echo -e "${CYAN}Subdomains Found : ${NC}$count"
+				echo
+				echo "$enum_op" | sed 's/^/ - /'
+				echo
+				write_log "Subdomain enumeration performed on $domain."
+				echo -e "${GREEN}[+] Report saved to $report${NC}"
+				show_summary "$domain"
+				
+			else
+				echo
+				echo -e "${RED}[-] No subdomains found!${NC}"
+
+			fi
+			;;
+		
+		10) 
 			echo
 			echo -e "${CYAN}Exiting Mini Recon Tool... 😎${NC}"
 			exit 0
@@ -407,4 +482,12 @@ do
 	esac
 
 done
+
+
+
+
+
+
+
+
 
