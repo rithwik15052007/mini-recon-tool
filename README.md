@@ -218,21 +218,6 @@ Potential enhancements for future versions:
 
 ---
 
-# Future Improvements
-
-Potential enhancements for future versions:
-
-- Parallel Scanning
-- Banner Grabbing
-- Service Version Detection
-- Operating System Detection
-- HTML/PDF Report Export
-- Interactive Dashboard
-- Multi-target Scanning
-- Vulnerability Detection using Nmap NSE Scripts
-
----
-
 # Disclaimer
 
 This project is developed **strictly for educational and ethical purposes**.
