@@ -77,6 +77,18 @@ sudo apt install curl dnsutils whois nmap whatweb openssl traceroute assetfinder
 
 ---
 
+# Platform Support
+
+| Platform | Support | Notes |
+|----------|---------|-------|
+| Linux | Fully Supported | Developed and tested on Kali Linux. |
+| macOS | Compatible | Requires Bash and required dependencies. |
+| Windows | Compatible | Use WSL or Git Bash with required dependencies. |
+
+> **Note:** The project is primarily developed and tested on Kali Linux. Compatibility on other platforms depends on the availability of required tools.
+
+---
+
 # Installation
 
 ### Clone the repository
@@ -132,6 +144,77 @@ This project demonstrates practical usage of:
 - Subdomain Enumeration
 - Shell Script Automation
 - Report Generation & Logging
+
+---
+
+# Issues
+
+If you encounter a bug, unexpected behavior, installation problem, or compatibility issue, please open an **Issue** in the GitHub repository.
+
+When reporting an issue, try to include:
+
+- Operating system and version
+- Error message or terminal output
+- Recon Tool version
+- Steps to reproduce the issue
+- Relevant screenshots, if applicable
+
+Please avoid sharing sensitive information such as private IP addresses, credentials, API keys, or access tokens.
+
+---
+
+# Contributing
+
+Contributions are welcome! 
+
+If you would like to improve the Mini Recon Tool:
+
+1. Fork the repository.
+2. Create a new branch.
+
+```bash
+git checkout -b feature/your-feature
+```
+
+3. Make your changes.
+4. Test the changes thoroughly.
+5. Commit your changes.
+
+```bash
+git commit -m "Add: your feature description"
+```
+
+6. Push the branch.
+
+```bash
+git push origin feature/your-feature
+```
+
+7. Open a **Pull Request** describing your changes.
+
+### Contribution Guidelines
+
+- Keep the Bash code clean and readable.
+- Follow the existing project structure and coding style.
+- Test new functionality before submitting a Pull Request.
+- Avoid introducing unnecessary dependencies.
+- Update the README when adding or changing features.
+- Ensure changes are intended for legitimate and authorized security testing.
+
+---
+
+# Future Improvements
+
+Potential enhancements for future versions:
+
+- Parallel Scanning
+- Banner Grabbing
+- Service Version Detection
+- Operating System Detection
+- HTML/PDF Report Export
+- Interactive Dashboard
+- Multi-target Scanning
+- Vulnerability Detection using Nmap NSE Scripts
 
 ---
 
